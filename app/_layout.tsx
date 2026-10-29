@@ -1,29 +1,63 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ActivityIndicator, View } from 'react-native';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { SettingsProvider, useSettings } from '@/context/SettingsContext';
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+function NavigationShell() {
+  const { colors, darkMode, ready: settingsReady } = useSettings();
+  const { ready: authReady } = useAuth();
 
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
+  if (!settingsReady || !authReady) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background }}>
+        <ActivityIndicator color={colors.primary} size="large" />
+      </View>
+    );
   }
 
+  const navTheme = {
+    ...(darkMode ? DarkTheme : DefaultTheme),
+    colors: {
+      ...(darkMode ? DarkTheme.colors : DefaultTheme.colors),
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.card,
+      text: colors.text,
+      border: colors.border,
+    },
+  };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
+    <ThemeProvider value={navTheme}>
+      <Stack
+        screenOptions={{
+          headerTintColor: colors.primary,
+          headerStyle: { backgroundColor: colors.background },
+          headerTitleStyle: { color: colors.text },
+          contentStyle: { backgroundColor: colors.background },
+        }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="login" options={{ title: 'Iniciar sesión' }} />
+        <Stack.Screen name="registro" options={{ title: 'Crear cuenta' }} />
+        <Stack.Screen name="nomina" options={{ title: 'Cálculo preciso' }} />
+        <Stack.Screen name="perfil" options={{ title: 'Mi perfil laboral' }} />
         <Stack.Screen name="+not-found" />
       </Stack>
-      <StatusBar style="auto" />
+      <StatusBar style={darkMode ? 'light' : 'dark'} />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <SettingsProvider>
+      <AuthProvider>
+        <NavigationShell />
+      </AuthProvider>
+    </SettingsProvider>
   );
 }
